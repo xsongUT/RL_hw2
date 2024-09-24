@@ -46,8 +46,37 @@ def value_prediction(
     """The V(s) function to estimate"""
     Q = np.zeros((states, actions))
     """The Q(s, a) function to estimate"""
+    # Policy evaluation part
+    while True:
+        delta = 0
+        newV = V.copy()
+        for state in range(states):
+            v = newV[state]
+         
+            newV[state] = 0 # clear the stored cell value
+            for action in range(actions):
+                action_prob = pi.action_prob(state, action) # Return the probabality of using action in policy
+                for prob, next_state, reward, done in P[state][action]:
+                    newV[state] += action_prob * prob * (reward + gamma * V[next_state] * (not done))
+
+            # Calculate whether the change in the variable before and after the update has narrowed down to below the threshold.（for all states)
+            delta = max(delta, abs(v - newV[state]))
+            #Update the value for all states
+        V=newV
+        if delta < theta:
+            break
+    
+    #above we already updated V,now we calculate Q(s,a) function, using converged V to calculate Q
+
+    for state in range(states):
+        for action in range(actions):
+            stateQvalue = 0
+            for prob, next_state, reward, done in P[state][action]:
+                stateQvalue += prob * (reward + gamma * V[next_state] * (not done))
+                Q[state][action] = stateQvalue    
 
     return V, Q
+
 
 def value_iteration(env: gym.Env, initV: np.ndarray, theta: float, gamma: float) -> Tuple[np.array, Policy]:
     """
@@ -81,5 +110,30 @@ def value_iteration(env: gym.Env, initV: np.ndarray, theta: float, gamma: float)
     """Initial policy, you will need to update this policy after each iteration"""
     P: np.ndarray = env.P
     """Transition Dynamics;  env.P[state][action] returns a list of tuples [(prob, next_state, reward, done)]"""
+    while True:
+        delta = 0
+        newV = V.copy() # use two array to update state values
+        for state in range(nS):
+            v = newV[state]
+            newV[state] = 0
+            updated_state_v = max(
+                sum(
+                    prob * (reward + gamma * V[next_state] * (not done)) for prob, next_state, reward, done in P[state][action]
+                ) for action in range(nA)
+            )
+            delta = max(delta, abs(v - updated_state_v))
+            newV[state] = updated_state_v
+        V=newV #using updated v-value array to replace the old value
+        if delta < theta:
+            break
+
+    # Create optimal policy based on the final V(s)
+    # Greedy policy based on the optimal Q-values
+    for state in range(nS):
+        for action in range(nA):
+            Q[state][action] = sum(
+                prob * (reward + gamma * V[next_state] * (not done))
+                for prob, next_state, reward, done in P[state][action]
+            )
 
     return V, Policy_DeterministicGreedy(Q)

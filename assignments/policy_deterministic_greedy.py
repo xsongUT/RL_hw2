@@ -7,6 +7,9 @@ class Policy_DeterministicGreedy(Policy):
         """
         Parameters:
         - Q (np.ndarray): Q function; numpy array shape of [nS,nA]
+        each row is for a state, so here we have nS rows
+        each column is for an action, so we have nA columns
+        each cell is a Q value 
         """
         self.Q = Q
 
@@ -23,7 +26,8 @@ class Policy_DeterministicGreedy(Policy):
         """
 
         ### TODO: Implement the action method ###
-        raise NotImplementedError
+        return int(np.argmax(self.Q[state]))  
+    # Return the index of ction with the highest Q value for a state(each row in self.Q is a state)
 
 
     @override
@@ -42,4 +46,4 @@ class Policy_DeterministicGreedy(Policy):
         """
 
         ### TODO: Implement the action_prob method ###
-        raise NotImplementedError
+        return 1.0 if action == int(np.argmax(self.Q[state])) else 0.0
